@@ -12,7 +12,7 @@ import { fetchCoffeeStores } from "../../lib/coffee-stores";
 
 import cls from "classnames";
 import { useContext, useEffect, useState } from "react";
-import { StoreContext } from "../_app";
+import { StoreContext } from "../../store/store-context";
 
 import { isEmpty } from "../../utils";
 
@@ -21,9 +21,13 @@ import { isEmpty } from "../../utils";
 //This runs on the server
 export async function getStaticProps(staticProps) {
     const params = staticProps.params;      //params is a property to Access the dynamic id on Server side
-    
+    console.log({staticProps});
     const coffeeStores = await fetchCoffeeStores();
-    const findCoffeeStoreById = coffeeStores.find ((coffeeStore) => {
+    console.log({SAURABHKATKAR :coffeeStores});
+
+    const findCoffeeStoreById = coffeeStores.find((coffeeStore) => {
+        console.log(coffeeStore);
+        console.log({params});
         return coffeeStore.id.toString() === params.id;            // Dynamic id
     });
     console.log({findCoffeeStoreById});
@@ -62,7 +66,8 @@ const CoffeeStore = (initialProps) => {
 
     
     const id = router.query.id;
-    const [coffeeStore, setCoffeeStore] = useState(initialProps.coffeeStore);
+    const initialCoffeeStore = initialProps.coffeeStore?? { imgUrl:"", address:"", location:{neighborhood:null,}, name:""};
+    const [coffeeStore, setCoffeeStore] = useState(initialCoffeeStore);
     console.log({initialProps});
     const {
         state: { coffeeStores },
@@ -82,6 +87,7 @@ const CoffeeStore = (initialProps) => {
 
 
     const { imgUrl, address, location, name} = coffeeStore;
+    console.log({coffeeStore});
 
     const handleUpvoteButton = () => {
         console.log("handle upvote");
@@ -130,15 +136,16 @@ const CoffeeStore = (initialProps) => {
                             <Image src="/static/icons/places.svg" width="24" height="24" />
                             <p className={styles.text}>{address}</p>
                         </div>
-
                     )}
 
                     
                     
-                        <div className={styles.iconWrapper}>
-                            <Image src="/static/icons/nearMe.svg" width="24" height="24" />
-                            <p className={styles.text}>{location.neighborhood?.[0]}</p>       
-                        </div>
+                        {location?.neighborhood && (
+                            <div className={styles.iconWrapper}>
+                                <Image src="/static/icons/nearMe.svg" width="24" height="24" />
+                                <p className={styles.text}>{location?.neighborhood?.[0]}</p>       
+                            </div>
+                        )}
 
                   
                     

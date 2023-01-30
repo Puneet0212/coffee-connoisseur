@@ -1,7 +1,7 @@
 // This file is created to get the latitude and longitude of the user
 
 import { useContext, useState } from "react";
-import { ACTION_TYPES, StoreContext } from "../pages/_app";
+import { ACTION_TYPES, StoreContext } from "../store/store-context";
 
 const useTrackLocation = () => {
 
