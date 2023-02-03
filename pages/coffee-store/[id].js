@@ -2,6 +2,7 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Head from "next/head";
 import Image from "next/image";
+import useSWR from "swr";
 
 
 import coffeeStoresData from '../../data/coffee-stores.json';
@@ -21,16 +22,11 @@ import { isEmpty } from "../../utils";
 //This runs on the server
 export async function getStaticProps(staticProps) {
     const params = staticProps.params;      //params is a property to Access the dynamic id on Server side
-    console.log({staticProps});
     const coffeeStores = await fetchCoffeeStores();
-    console.log({SAURABHKATKAR :coffeeStores});
 
     const findCoffeeStoreById = coffeeStores.find((coffeeStore) => {
-        console.log(coffeeStore);
-        console.log({params});
         return coffeeStore.id.toString() === params.id;            // Dynamic id
     });
-    console.log({findCoffeeStoreById});
     return {
         props: {
             coffeeStore: findCoffeeStoreById? findCoffeeStoreById : {},
@@ -41,7 +37,6 @@ export async function getStaticProps(staticProps) {
 export async function getStaticPaths() {
 
     const coffeeStores = await fetchCoffeeStores();
-    console.log(coffeeStores);
 
     const paths = coffeeStores.map((coffeeStore) => {
         return {
@@ -68,31 +63,96 @@ const CoffeeStore = (initialProps) => {
     const id = router.query.id;
     const initialCoffeeStore = initialProps.coffeeStore?? { imgUrl:"", address:"", location:{neighborhood:null,}, name:""};
     const [coffeeStore, setCoffeeStore] = useState(initialCoffeeStore);
-    console.log({initialProps});
     const {
         state: { coffeeStores },
     } = useContext(StoreContext);
 
-    useEffect(() => {
+    const handleCreateCoffeeStore = async (coffeeStore) => {
+        try {
+            const { id, name, voting, imgUrl, address} = coffeeStore;
+
+            const response = await fetch('/api/createCoffeeStore', {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json",
+                },
+                body: JSON.stringify({
+                    id,
+                    name,
+                    voting:0,
+                    imgUrl,
+                    address: address || ""
+                }),
+            });
+
+            const dbCoffeeStore = response.json();
+        } catch (err) {
+            console.error('Error creating coffee store', err);
+        }
+    }
+        useEffect(() => {
         if(isEmpty(initialProps.coffeeStore)) {
             if(coffeeStores.length > 0) {
-                const findCoffeeStoreById = coffeeStores.find ((coffeeStore) => {
+                const coffeeStoreByContext = coffeeStores.find ((coffeeStore) => {
                     return coffeeStore.id.toString() === id;            // Dynamic id
                 });
             
-                setCoffeeStore(findCoffeeStoreById);
-            }
+                if(coffeeStoreByContext) {
+                    setCoffeeStore(coffeeStoreByContext);
+                    handleCreateCoffeeStore(coffeeStoreByContext);
+                }
+                
+            } 
+        } else {
+            // To make a record in airtable of statically generated coffee stores
+            handleCreateCoffeeStore(initialProps.coffeeStore);
         }
-    }, [id])
+    }, [id, initialProps, initialProps.coffeeStore])
 
 
     const { imgUrl, address, location, name} = coffeeStore;
-    console.log({coffeeStore});
+    const [votingCount, setVotingCount] = useState(0);
 
-    const handleUpvoteButton = () => {
-        console.log("handle upvote");
+    const fetcher = (url) => fetch(url).then((response) => response.json());
+    const{ data, error } = useSWR(`/api/getCoffeeStoreById?id=${id}`, fetcher);
+
+    useEffect( () => {
+        if (data && data.length>0) {
+            setCoffeeStore(data[0]);
+            setVotingCount(data[0].voting);
+        }
+    }, [data]);
+
+
+    const handleUpvoteButton = async () => {
+
+        try {
+
+            const response = await fetch('/api/favouriteCoffeeStoreById', {
+                method: "PUT",
+                headers: {
+                    "Content-type": "application/json",
+                },
+                body: JSON.stringify({
+                    id,
+                }),
+            });
+
+            const dbCoffeeStore = response.json();
+
+            if( dbCoffeeStore && dbCoffeeStore.length>0) {
+                let count = votingCount + 1;
+                setVotingCount(count);
+            }
+            
+        } catch (err) {
+            console.error('Error upvoting coffee store', err);
+        }
     };
 
+    if(error) {
+        return <div> Something went wrong retrieving the coffee store page </div>;
+    }
     //Even though a route exists in json data file, it needs some time to download the data/route and cache it into getStaticPaths()
     //So we have to use a property frpm router to allow us to show a 'Loading' state in meanwhile....
     if(router.isFallback){
@@ -151,7 +211,7 @@ const CoffeeStore = (initialProps) => {
                     
                     <div className={styles.iconWrapper}>
                         <Image src="/static/icons/star.svg" width="24" height="24" />
-                        <p className={styles.text}>1</p>
+                        <p className={styles.text}>{votingCount}</p>
                     </div>
 
                     <button className={styles.upvoteButton} onClick= {handleUpvoteButton}>

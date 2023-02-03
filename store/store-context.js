@@ -12,7 +12,6 @@ export const ACTION_TYPES = {
 const storeReducer = (state, action) => {
   switch(action.type) {
     case ACTION_TYPES.SET_LAT_LONG: {
-      console.log({action});
       return {...state, latLong: action.payload.latLong }
     }
 
