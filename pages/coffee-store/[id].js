@@ -128,6 +128,7 @@ const CoffeeStore = (initialProps) => {
 
         try {
 
+            console.log("time started",new Date());
             const response = await fetch('/api/favouriteCoffeeStoreById', {
                 method: "PUT",
                 headers: {
@@ -138,7 +139,7 @@ const CoffeeStore = (initialProps) => {
                 }),
             });
 
-            const dbCoffeeStore = response.json();
+            const dbCoffeeStore = await response.json();
 
             if( dbCoffeeStore && dbCoffeeStore.length>0) {
                 let count = votingCount + 1;

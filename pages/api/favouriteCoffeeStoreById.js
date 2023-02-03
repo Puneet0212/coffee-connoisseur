@@ -26,20 +26,19 @@ const favouriteCoffeeStoreById = async (req, res) => {
                     if(updateRecord) {
                         const minifiedRecords = getMinifiedRecords(updateRecord);
                         res.json(minifiedRecords);
+                    } else {
+                        res.json(records);
                     }
-                    res.json(records);
                 } 
                 else {
                     res.json( { message: "Coffee store id doesn't exist", id });
                 }
             } else {
-                res.status(400);
-                res.json({ message: "Id is missing"});
+                res.status(400).json({ message: "Id is missing"});
             }
         } catch (error) {
 
-            res.status(500);
-            res.json({message: "Error upvoting coffee store", error});
+            res.status(500).json({message: "Error upvoting coffee store", error});
 
         }
     }
