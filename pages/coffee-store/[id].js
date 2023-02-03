@@ -128,7 +128,6 @@ const CoffeeStore = (initialProps) => {
 
         try {
 
-            console.log("time started",new Date());
             const response = await fetch('/api/favouriteCoffeeStoreById', {
                 method: "PUT",
                 headers: {
